@@ -1,8 +1,14 @@
-usethis::use_package( "thinkr" )
-golem::add_module( name = "name_of_module1" )
-golem::add_module( name = "name_of_module2" )
-golem::add_fct( "helpers" ) 
-golem::add_utils( "helpers" )
+# Add a package
+usethis::use_package( "shinycssloaders" )
+
+# Add a module
+golem::add_module( name = "variants" )
+
+# Add a function
+golem::add_fct( "name_of_function" ) 
+
+golem::add_utils( "utils" )
+
 golem::add_js_file( "script" )
 golem::add_js_handler( "handlers" )
 golem::add_css_file( "custom" )

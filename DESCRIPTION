@@ -5,9 +5,32 @@ Authors@R: person('Jennifer', 'Hüllein', email = 'jennifer.huellein@nct-heidelb
 Description: Shiny web application for assessment of pathogenicity of new genetic variants.
 License: What license is it under?
 Imports: 
+    checkhelper,
     config (>= 0.3.1),
+    cowplot,
+    dplyr,
+    drawProteins,
+    DT,
+    ggnewscale,
+    ggplot2,
+    ggpubr,
+    ggrepel,
+    ggsci,
     golem (>= 0.3.1),
-    shiny (>= 1.7.1)
+    grDevices,
+    grid,
+    gridExtra,
+    pkgload,
+    RColorBrewer,
+    rstatix,
+    scales,
+    seqminer,
+    shiny (>= 1.7.1),
+    shinycssloaders,
+    shinyjs,
+    shinythemes,
+    splitstackshape,
+    tidyr
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
