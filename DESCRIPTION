@@ -5,7 +5,6 @@ Authors@R: person('Jennifer', 'Hüllein', email = 'jennifer.huellein@nct-heidelb
 Description: Shiny web application for assessment of pathogenicity of new genetic variants.
 License: What license is it under?
 Imports: 
-    checkhelper,
     config (>= 0.3.1),
     cowplot,
     dplyr,

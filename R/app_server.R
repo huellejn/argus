@@ -315,44 +315,12 @@ app_server <- function( input, output, session ) {
     )
     
     # Base plot
-    plot_chromosome <- ggplot() + 
-      # Transcript
-      geom_rect(data = transcript_info, aes(xmin = tx_seq_start, xmax = tx_seq_end, ymin = -1, ymax = 1), fill = "grey") +
-      geom_rect(data = exon_info, aes(xmin = exon_seq_start, xmax = exon_seq_end, ymin = -2, ymax = 2),
-                fill="aquamarine4", alpha = .8) +
-      ylim(-3,10) +
-      theme_minimal() +
-      labs(title = ifelse(!is.na( toi_nm ), paste( toi, toi_nm, sep = " / "), toi), x = "Genome position" ) + 
-      theme(axis.text.y = element_blank(),
-            axis.title.y = element_blank(),
-            panel.grid = element_blank()
-            #plot.margin = margin(.1, .1, .1, .2, unit = "in")
-      )
+    p <- plot_transcript(transcript_info, exon_info, toi, toi_nm, toi_nm_short, clinvar_goi)
     
-    # Add segments for pathogenic variants
-    if(nrow(clinvar_goi) > 0) {
-      
-      clinvar_canonical_pathogenic <- dplyr::filter(clinvar_goi, RefSeq.transcript.short == toi_nm_short, Label == "pathogenic")
-      
-      if(nrow(clinvar_canonical_pathogenic)>0) {
-        
-        plot_chromosome <- plot_chromosome +
-          geom_segment(data = clinvar_canonical_pathogenic,
-                       aes(x= Chromosome.position, xend=Chromosome.position,
-                           y=2.1, yend=3),
-                       color = "black",
-                       size = .4) +
-          geom_point(data = clinvar_canonical_pathogenic,
-                     aes(x = Chromosome.position, y = 3),
-                     shape = 21, fill = "red", alpha = .3)
-      }
-    }
-    
-    # Add labels
-    # Add color for selected rows
+    # Add labels and color for selected rows
     if(nrow(rct_segments) > 0) {
       
-      plot_chromosome <- plot_chromosome +
+      p <- p +
         geom_text_repel(data = rct_segments,
                         mapping = aes(x = cds_pos,
                                       y = 3,
@@ -382,17 +350,17 @@ app_server <- function( input, output, session ) {
     # Reverse x-scale if gene is located on reverse strand
     if(transcript_info$seq_strand == -1) {
       
-      plot_chromosome <- plot_chromosome +
-        scale_x_reverse(labels = comma) #position = "top"
+      p <- p +
+        scale_x_reverse(labels = comma)
       
     } else {
       
-      plot_chromosome <- plot_chromosome +
-        scale_x_continuous(labels = comma) #position = "top" 
+      p <- p +
+        scale_x_continuous(labels = comma)  
       
     }
     
-    return(plot_chromosome)
+    return(p)
     
   })
   
@@ -529,52 +497,29 @@ app_server <- function( input, output, session ) {
     
     selected_clinsig <- input$selectclinsig #c("benign", "pathogenic")
     protein_length <- protein_length()
-    
-    plot_density_clinvar_empty <- ggplot() +
-      theme_void() +
-      scale_x_continuous(limits = c(1, protein_length), breaks = x_axis_breaks(protein_length))+
-      scale_y_continuous(expand = c(0,0)) +
-      labs(x = "Amino acid position", y = "ClinVar variant density") + 
-      theme_classic() +
-      theme(
-        axis.text.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        plot.margin = margin(.1, .15, .1, .4, unit = "in"),
-        legend.position = "bottom"
-      )
-    
     clinvar_goi <- clinvar_goi()
     
     if(nrow(clinvar_goi) > 0 & length(selected_clinsig) > 0) {
+      
       clinvar_goi <- dplyr::filter(clinvar_goi, Label %in% selected_clinsig)
-    }
-    
-    if(nrow(clinvar_goi) > 0 & length(selected_clinsig) > 0) {
       
-      cols_selected <- cols[names(cols) %in% selected_clinsig]
-      
-      plot_density_clinvar <-  ggplot(data = clinvar_goi) + 
-        geom_density(aes(x = AA.position, y = after_stat(ndensity), fill = Label), adjust = 0.1, alpha = .7, linetype = "blank") +  
-        geom_segment(aes(x = AA.position, xend = AA.position, y = -.1, yend = 0, color = Label)) +
-        geom_hline(yintercept = 0, color = "grey60") +
-        scale_x_continuous(expand = c(0,0), limits = c(1,protein_length), breaks = x_axis_breaks(protein_length))+
-        scale_y_continuous(expand = c(0,0)) +
-        scale_fill_manual("Clinical significance", values = cols_selected) + 
-        scale_color_manual("Clinical significance", values = cols_selected) + 
-        labs(x = "Amino acid position", y = "ClinVar variant density") + 
-        theme_classic() + 
-        theme(
-          axis.text.y = element_blank(),
-          axis.ticks.y = element_blank(),
-          legend.position = "bottom",
-          plot.margin = margin(.1, .15, .1, .4, unit = "in")
-        )
-      
+      if( nrow(clinvar_goi) > 0) {
+        
+        cols_selected <- cols[names(cols) %in% selected_clinsig]
+        p <- plot_density_clinvar(dat = clinvar_goi, protein_length, cols_selected)
+        
+      } else {
+        
+        p <- plot_density_clinvar_empty(protein_length)
+        
+      }
     } else {
-      plot_density_clinvar <- plot_density_clinvar_empty
+      
+      p <- plot_density_clinvar_empty(protein_length)
+      
     }
     
-    return(plot_density_clinvar)
+    return(p)
     
   })
   
@@ -587,54 +532,14 @@ app_server <- function( input, output, session ) {
     req(goi())
     
     protein_length <- protein_length()
+    genotypes <- genotypes()
     
-    df_gnomad <- genotypes() %>%
-      dplyr::select(aapos, gnomAD_exomes_AC, gnomAD_genomes_AC) %>%
-      gather(-aapos, key = "Source", value = "Count") %>%
-      group_by(aapos, Source) %>%
-      summarise(Sum = sum(Count, na.rm = TRUE), .groups = "drop") 
-    
-    ## Column plot 1
-    p_col1 <- ggplot(data = dplyr::filter(df_gnomad, Source == "gnomAD_exomes_AC"), aes(x = aapos, y = Sum)) +
-      geom_col(color = "forestgreen", fill = "forestgreen") +
-      scale_x_continuous(expand = c(0,0), limits = c(1,protein_length), breaks = x_axis_breaks(protein_length)) +
-      scale_y_log10() +
-      annotation_logticks(base = 10, sides = "l") +
-      theme_minimal() +
-      labs(y = "gnomAD exomes count") + 
-      theme(
-        panel.grid.major.x = element_blank(),
-        panel.grid.minor.x = element_blank(),
-        panel.grid.minor.y = element_blank(),
-        axis.title.x = element_blank(),
-        axis.text.x = element_blank(),
-        #plot.margin = margin(5.5, 8, 0, 0),
-        plot.margin = margin(.1, .15, 0, .05, unit = "in"),
-        plot.title = element_text(hjust = .5)
-      )
-    
-    ## Column plot 2
-    p_col2 <- ggplot(data = dplyr::filter(df_gnomad, Source == "gnomAD_genomes_AC"), aes(x = aapos, y = Sum)) +
-      geom_col(color = "deepskyblue", fill = "deepskyblue") +
-      scale_x_continuous(expand = c(0,0), limits = c(1,protein_length), breaks = x_axis_breaks(protein_length)) +
-      scale_y_continuous(trans = reverselog_trans(10), expand = c(0,0)) +
-      annotation_logticks(base = 10, sides = "l") +
-      theme_minimal() +
-      labs(y = "gnomAD genomes count", x = "Amino acid position") + 
-      theme(
-        panel.grid.major.x = element_blank(),
-        panel.grid.minor.x = element_blank(),
-        panel.grid.minor.y = element_blank(),
-        plot.margin = margin(0, .15, .1, .05, unit = "in")
-        #plot.margin = margin(0, 8, 5.5, 0)
-      )
-    
-    ## Combine column plot 1 and 2
-    plot_gnomad <- plot_grid(p_col1, p_col2, nrow = 2)
-    
-    return(plot_gnomad)
+    p <- plot_gnomad(dat = genotypes, protein_length)
+
+    return(p)
     
   })
+  
   output$plot_gnomad <- renderPlot({
     plotGnomad()
   })
@@ -644,86 +549,15 @@ app_server <- function( input, output, session ) {
     
     req(goi())
     
-    selected_score <- input$selectscore
-    protein_length <- protein_length()
+    tidy_data <- tidy_data()
+    selected_scores <- input$selectscore
+    protein_length <- protein_length()+1
+    score_index <- 1
+    dat <- tidy_data
+    goi <- goi()
+    toi <- toi()
     
-    if(length(selected_score) > 0) {
-      
-      inputs <- selected_score[1]
-      
-      dat <- tidy_data() %>%
-        dplyr::filter(score_type %in% {{inputs}} ) 
-      
-      dat_hp <- tidy_data() %>%
-        dplyr::filter(score_type == {{inputs}}) %>%
-        arrange(aapos) %>%
-        group_by(aapos) %>%
-        summarise(mean = mean(score, na.rm = TRUE))
-      
-      p1 <- ggplot(dat) +
-        geom_smooth(aes(x = aapos, y = score), color = "red") + 
-        theme_minimal() + 
-        scale_x_continuous(expand = c(0,0), limits = c(1, protein_length)) +
-        labs(title = paste0({{inputs}}, " scores for gene ", goi(), " (", toi(), ")") ) +
-        theme(axis.title = element_blank(),
-              axis.text = element_blank(), 
-              panel.grid.minor = element_blank(),
-              axis.ticks.y = element_blank(),
-              #plot.margin = margin(5.5, 7, 0, 40),
-              plot.margin = margin(.1, .15, 0, .65, unit = "in"),
-              plot.title = element_text(hjust = .5)
-        )
-      
-      # colors
-      col_hp_low <- dbNSFP_scores$color_min[dbNSFP_scores$score_type == inputs] 
-      col_hp_high <- dbNSFP_scores$color_max[dbNSFP_scores$score_type == inputs] 
-      
-      if(is.na(dbNSFP_scores$score_min[dbNSFP_scores$score_type == inputs])) {
-        lim_hp <- c(
-          min(dat_hp$mean),
-          max(dat_hp$mean)
-        )
-      } else {
-        lim_hp <- sort(c(
-          dbNSFP_scores$score_min[dbNSFP_scores$score_type == inputs],
-          dbNSFP_scores$score_max[dbNSFP_scores$score_type == inputs]
-        ))
-      }
-      
-      p2 <- ggplot(dat_hp, aes(x = aapos, y = 1, fill = mean)) + 
-        geom_tile() + 
-        labs(x = "Amino acid position") + 
-        theme_minimal() + 
-        scale_fill_gradient(low = col_hp_low, high = col_hp_high, name={{inputs}}, limits = c(lim_hp[1], lim_hp[2]) ) +
-        scale_x_continuous(expand = c(0,0), limits = c(1, protein_length), breaks = x_axis_breaks(protein_length)) +
-        theme(legend.position = "bottom",
-              panel.grid = element_blank(),
-              axis.text.y = element_blank(),
-              axis.title.y = element_blank(),
-              plot.margin = margin(0, .15, .1, .65, unit = "in")
-              #plot.margin = margin(0, 7, 5.5, 40)
-        )
-      
-      plot_scores1 <- plot_grid(p1, p2, align = "v", nrow = 2, rel_heights = c(1,1))
-      
-      
-    } else {
-      
-      plot_scores1 <- ggplot() +
-        theme_void() +
-        theme_minimal() +
-        scale_x_continuous(expand = c(0,0), limits = c(1, protein_length )) +
-        scale_y_continuous(limits = c(0,1)) +
-        labs(title = paste0("Scores for gene ", goi(), " (", toi(), ")") ) +
-        theme(
-          panel.grid.minor = element_blank(),
-          axis.ticks.y = element_blank(),
-          plot.margin = margin(.1, .15, .1, .65, unit = "in")
-        )
-      
-    }
-    
-    return(plot_scores1)
+    plot_score(dat = tidy_data, selected_scores, score_index, protein_length, goi, toi, dbNSFP_scores)
     
   })
   
@@ -736,67 +570,15 @@ app_server <- function( input, output, session ) {
     
     req(goi(), req(length(selected_scores())>1))
     
-    inputs <- selected_scores()[2]
-    protein_length <- protein_length()
+    tidy_data <- tidy_data()
+    selected_scores <- input$selectscore
+    protein_length <- protein_length()+1
+    score_index <- 2
+    dat <- tidy_data
+    goi <- goi()
+    toi <- toi()
     
-    dat <- tidy_data() %>%
-      dplyr::filter(score_type %in% {{inputs}} ) 
-    
-    dat_hp <- tidy_data() %>%
-      dplyr::filter(score_type == {{inputs}}) %>%
-      arrange(aapos) %>%
-      group_by(aapos) %>%
-      summarise(mean = mean(score, na.rm = TRUE))
-    
-    p1 <- ggplot(dat) +
-      geom_smooth(aes(x = aapos, y = score), color = "red") + 
-      theme_minimal() + 
-      scale_x_continuous(expand = c(0,0), limits = c(1, protein_length)) +
-      labs(title = paste0({{inputs}}, " scores for gene ", goi(), " (", toi(), ")") ) +
-      theme(axis.title = element_blank(),
-            axis.text = element_blank(), 
-            panel.grid.minor = element_blank(),
-            axis.ticks.y = element_blank(),
-            plot.margin = margin(.1, .15, 0, .65, unit = "in"),
-            plot.title = element_text(hjust = .5)
-      )
-    
-    # colors
-    col_hp_low <- dbNSFP_scores$color_min[dbNSFP_scores$score_type == inputs] 
-    col_hp_high <- dbNSFP_scores$color_max[dbNSFP_scores$score_type == inputs] 
-    
-    if(is.na(dbNSFP_scores$score_min[dbNSFP_scores$score_type == inputs])) {
-      
-      lim_hp <- c(
-        min(dat_hp$mean),
-        max(dat_hp$mean)
-      )
-      
-    } else {
-      
-      lim_hp <- sort(c(
-        dbNSFP_scores$score_min[dbNSFP_scores$score_type == inputs],
-        dbNSFP_scores$score_max[dbNSFP_scores$score_type == inputs]
-      ))
-      
-    }
-    
-    p2 <- ggplot(dat_hp, aes(x = aapos, y = 1, fill = mean)) + 
-      geom_tile() + 
-      labs(x = "Amino acid position") + 
-      theme_minimal() + 
-      scale_fill_gradient(low = col_hp_low, high = col_hp_high, name={{inputs}}, limits = c(lim_hp[1], lim_hp[2]) ) +
-      scale_x_continuous(expand = c(0,0), limits = c(1, protein_length), breaks = x_axis_breaks(protein_length)) +
-      theme(legend.position = "bottom",
-            panel.grid = element_blank(),
-            axis.text.y = element_blank(),
-            axis.title.y = element_blank(),
-            plot.margin = margin(0, .15, .1, .65, unit = "in"),
-            plot.title = element_text(hjust = .5)
-      )
-    
-    p <- plot_grid(p1, p2, align = "v", nrow = 2, rel_heights = c(1,1))
-    return(p)
+    plot_score(dat = tidy_data, selected_scores, score_index, protein_length, goi, toi, dbNSFP_scores)
     
   })
   
@@ -809,71 +591,15 @@ app_server <- function( input, output, session ) {
     
     req(goi(), req(length(selected_scores())>2))
     
-    if(length(selected_scores())>2) {
-      inputs <- selected_scores()[3]
-      protein_length <- protein_length()
-      
-      dat <- tidy_data() %>%
-        dplyr::filter(score_type %in% {{inputs}} ) 
-      
-      dat_hp <- tidy_data() %>%
-        dplyr::filter(score_type == {{inputs}}) %>%
-        arrange(aapos) %>%
-        group_by(aapos) %>%
-        summarise(mean = mean(score, na.rm = TRUE))
-      
-      p1 <- ggplot(dat) +
-        geom_smooth(aes(x = aapos, y = score), color = "red") + 
-        theme_minimal() + 
-        scale_x_continuous(expand = c(0,0), limits = c(1, protein_length)) +
-        labs(title = paste0({{inputs}}, " scores for gene ", goi(), " (", toi(), ")") ) +
-        theme(axis.title = element_blank(),
-              axis.text = element_blank(), 
-              panel.grid.minor = element_blank(),
-              axis.ticks.y = element_blank(),
-              plot.margin = margin(.1, .15, 0, .65, unit = "in"),
-              plot.title = element_text(hjust = .5)
-        )
-      
-      # colors
-      col_hp_low <- dbNSFP_scores$color_min[dbNSFP_scores$score_type == inputs] 
-      col_hp_high <- dbNSFP_scores$color_max[dbNSFP_scores$score_type == inputs] 
-      
-      if(is.na(dbNSFP_scores$score_min[dbNSFP_scores$score_type == inputs])) {
-        
-        lim_hp <- c(
-          min(dat_hp$mean),
-          max(dat_hp$mean)
-        )
-        
-      } else {
-        
-        lim_hp <- sort(c(
-          dbNSFP_scores$score_min[dbNSFP_scores$score_type == inputs],
-          dbNSFP_scores$score_max[dbNSFP_scores$score_type == inputs]
-        ))
-        
-      }
-      
-      p2 <- ggplot(dat_hp, aes(x = aapos, y = 1, fill = mean)) + 
-        geom_tile() + 
-        labs(x = "Amino acid position") + 
-        theme_minimal() + 
-        scale_fill_gradient(low = col_hp_low, high = col_hp_high, name={{inputs}}, limits = c(lim_hp[1], lim_hp[2]) ) +
-        scale_x_continuous(expand = c(0,0), limits = c(1, protein_length), breaks = x_axis_breaks(protein_length)) +
-        theme(legend.position = "bottom",
-              panel.grid = element_blank(),
-              axis.text.y = element_blank(),
-              axis.title.y = element_blank(),
-              plot.margin = margin(0, .15, .1, .65, unit = "in")
-        )
-      
-      p <- plot_grid(p1, p2, align = "v", nrow = 2, rel_heights = c(1,1))
-      
-    } else {
-      p <- NULL
-    }
-    return(p)
+    tidy_data <- tidy_data()
+    selected_scores <- input$selectscore
+    protein_length <- protein_length()+1
+    score_index <- 3
+    dat <- tidy_data
+    goi <- goi()
+    toi <- toi()
+    
+    plot_score(dat = tidy_data, selected_scores, score_index, protein_length, goi, toi, dbNSFP_scores)
     
   })
   

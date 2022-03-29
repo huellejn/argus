@@ -68,20 +68,7 @@ app_ui <- function(request) {
                                 fluidRow(
                                   column(6, numericInput("figurewidth", "Width", value = 8, min = 0)),
                                   column(6, numericInput("figureheight", "Height", value = 4, min = 0))
-                                ),
-                                
-                                # Download report
-                                #br(),
-                                
-                                #radioButtons(
-                                #   inputId = 'reportformat', label = 'Document format',
-                                #   choices = c('HTML', 'PDF'),
-                                #   selected = 'HTML'
-                                # ),
-                                
-                                #shinyjs::disabled(downloadButton(
-                                #   outputId = 'dwnbtn_report', label = 'Generate report'
-                                # ))
+                                )
                                 
                    ),
                    
@@ -113,7 +100,7 @@ app_ui <- function(request) {
                                  column(1, downloadButton('dwnbtn_gnomad', '', icon = icon('download') ))
                                )),
                              conditionalPanel(
-                               condition = "input.selectplot.includes('In silico scores') && input.selectgene.length > 0",
+                               condition = "input.selectplot.includes('In silico scores') && input.selectgene.length > 0 && input.selectscore.length > 0",
                                fluidRow(
                                  column(11, shinycssloaders::withSpinner(plotOutput('plot_scores1', height = '250px'))),
                                  column(1, downloadButton('dwnbtn_scores1', '', icon = icon('download') ))
@@ -131,7 +118,7 @@ app_ui <- function(request) {
                                  column(1, downloadButton('dwnbtn_scores3', '', icon = icon('download') ))
                                )),
                              conditionalPanel(
-                               condition = "input.selectplot.includes('Score statistics') && input.selectgene.length > 0",
+                               condition = "input.selectplot.includes('Score statistics') && input.selectgene.length > 0 && input.selectscore.length > 0",
                                fluidRow(
                                  column(11, shinycssloaders::withSpinner(plotOutput('plot_violin'))),
                                  column(1, downloadButton('dwnbtn_violin', '', icon = icon('download') ))
