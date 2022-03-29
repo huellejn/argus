@@ -38,6 +38,13 @@ dbNSFP_version <- "dbNSFP4.1a_grch38"
 ## Input values for gene of interest (goi)
 val_goi <- canonical_transcript$Gene.symbol
 
+# Settings for violin score plot
+## Match bases for genes on reverse strand
+reverse_strand <- c(A="T", T="A", C="G", G="C")
+
+violin_color <- setNames(c("#CC6677", "#88CCEE", "#999933","#DDCC77" ), 
+                         c("ClinVar_pathogenic", "ClinVar_benign" , "gnomAD", "InSilico"))
+
 # Define functions ----------------------------
 reverselog_trans <- function(base = exp(1)) {
   trans <- function(x) -log(x, base)
