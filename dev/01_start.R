@@ -8,7 +8,7 @@ golem::fill_desc(
   repo_url = NULL
 )     
 golem::set_golem_options()
-#usethis::use_mit_license( "Golem User" )
+usethis::use_gpl3_license( )
 usethis::use_readme_rmd( open = FALSE )
 #usethis::use_code_of_conduct()
 #usethis::use_lifecycle_badge( "Experimental" )
