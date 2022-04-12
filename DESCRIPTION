@@ -1,22 +1,19 @@
 Package: argus
 Title: aRgus: multilevel variant visualization & advanced prediction score modeling
-Version: 0.0.0.9000
+Version: 1.0.0
 Authors@R: person('Jennifer', 'Hüllein', email = 'jennifer.huellein@nct-heidelberg.de', role = c('cre', 'aut'))
 Description: Shiny web application for assessment of pathogenicity of new genetic variants.
-License: What license is it under?
+License: GPL (>= 3)
 Imports: 
     config (>= 0.3.1),
     cowplot,
-    dplyr,
-    drawProteins,
     DT,
     ggnewscale,
-    ggplot2,
     ggpubr,
     ggrepel,
     ggsci,
     golem (>= 0.3.1),
-    grDevices,
+    jsonlite,
     pkgload,
     RColorBrewer,
     rstatix,
@@ -27,6 +24,8 @@ Imports:
     shinyjs,
     shinythemes,
     splitstackshape,
+    ggplot2,
+    dplyr,
     tidyr
 Encoding: UTF-8
 LazyData: true
