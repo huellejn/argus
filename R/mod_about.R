@@ -1,6 +1,6 @@
 #' about UI Function
 #'
-#' @description The UI of the 'About the app' section.
+#' @description Shiny module containing the 'About the app' section as of the UI.
 #'
 #' @param id,input,output,session Internal parameters for {shiny}.
 #'
