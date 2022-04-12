@@ -5,20 +5,20 @@
 #' @import shiny
 #' @import dplyr
 #' @import ggplot2
-#' @import drawProteins
 #' @import tidyr
 #' @import scales
 #' @import ggsci
-#' @import ggnewscale
-#' @import ggrepel
+#' @importFrom ggnewscale new_scale_fill
+#' @importFrom ggrepel geom_text_repel
 #' @import cowplot
 #' @importFrom ggpubr stat_pvalue_manual
-#' @import grDevices
+#' @importFrom jsonlite fromJSON
 #' @import rstatix
-#' @import DT
+#' @importFrom DT renderDataTable datatable formatStyle styleInterval
 #' @import shinyjs
-#' @import seqminer
-#' @import splitstackshape
+#' @importFrom seqminer tabix.read.table
+#' @importFrom splitstackshape cSplit
+#' @importFrom stats setNames
 #' @noRd
 app_server <- function( input, output, session ) {
   
@@ -66,36 +66,54 @@ app_server <- function( input, output, session ) {
 
   ## Get transcript, exon and protein information from ensembl and drawProteins
   transcript_info <- reactive({
-    dplyr::filter(edb_transcript_info, tx_id == toi())
+    edb_transcript_info[edb_transcript_info$tx_id == toi(), ]
   })
   
   exon_info <- reactive({
-    dplyr::filter(edb_exon_info, tx_id == toi())
+    edb_exon_info[edb_exon_info$tx_id == toi(), ]
   }) 
   
-  protein_info <- reactive({
+  protein_id <- reactive({
     dplyr::filter(edb_protein_info, tx_id == toi()) %>%
       dplyr::select(-tx_id) %>%
-      distinct()
+      distinct(uniprot_id) %>%
+      pull()
   }) 
   
   protein_info_domain <- reactive({
     
-    req(nrow(protein_info()) > 0)
+    protein_id <- protein_id()
     
-    protein_info_domain_json <- drawProteins::get_features(protein_info()$uniprot_id)
-    protein_info_domain <- drawProteins::feature_to_dataframe(protein_info_domain_json)
-    protein_info_domain <- protein_info_domain %>%
-      dplyr::filter(
-        type %in% c("SIGNAL", "CHAIN", "DOMAIN", "ZN_FING", "COILED", "TRANSIT", "NP_BIND", "ACT_SITE", "VAR_SEQ", "REPEAT", "REGION"),
-        ! description %in% c("NONE", "Disordered")
-      )
+    req(length(protein_id) > 0)
+    
+    url <- paste0(baseurl, protein_id)
+    protein_info_domain_json <- fromJSON(url, flatten=TRUE)
+    
+    if(length(protein_info_domain_json) > 0) {
+      
+      protein_info_domain <- protein_info_domain_json[[6]][[1]]
+      protein_info_domain <- protein_info_domain %>%
+        dplyr::filter(
+          type %in% c("SIGNAL", "CHAIN", "DOMAIN", "ZN_FING", "COILED", "TRANSIT", "NP_BIND", "ACT_SITE", "VAR_SEQ", "REPEAT", "REGION"),
+          ! description %in% c("Disordered"),
+          ! is.na(description)
+        ) %>%
+        mutate(
+          begin = as.numeric(begin),
+          end = as.numeric(end)
+        )
+      
+    } else {
+      
+      protein_info_domain <- NULL
+      
+    }
     return(protein_info_domain)
   })
   
   protein_length <- reactive({
     
-    req(nrow(protein_info()) > 0)
+    req(nrow(protein_info_domain()) > 0)
     
     max(protein_info_domain()$end, na.rm = TRUE)
   }) 
@@ -108,30 +126,37 @@ app_server <- function( input, output, session ) {
   })
   
   ## Get dbNSFP entries for goi
-  ## sc: selected columns
-  sc <- c(1:4,
-          12:16,
-          20,
-          23:25,
-          28,
-          79, 116, 37, 40, 43, 46, 64, 76, 67, 61, 69, 72, 102, 53, 58, 120, 81, 86, 88, 49, 90, 93, 96, 99, 122, 126, 129, 132, 135, 137, 140, 143, 146, 
-          149, 152, 154, 156, 158, 160, 162, 164, 167, 105, 242, 244, 315, 317
-          # REVEL, CADD_phred, SIFT_score, SIFT4G_score, Polyphen2_HDIV_score, Polyphen2_HVAR_score, #PROVEAN_score, M-CAP_score, VEST4_score, 
-          # FATHMM_score, MetaSVM_score, MetaLR_score, ClinPred_score, MutationTaster_score, MutationAssessor_score, DANN_score, MutPred_score,
-          # MVP_score, MPC_score, LRT_score, PrimateAI_score, DEOGEN2_score, BayesDel_addAF_score, BayesDel_noAF_score, fathmm-MKL_coding_score, 
-          # fathmm-XF_coding_score, Eigen-raw_coding, Eigen-PC-raw_coding, GenoCanyon_score, integrated_fitCons_score, GM12878_fitCons_score,
-          # H1-hESC_fitCons_score, HUVEC_fitCons_score
-          # LINSIGHT, GERP++_RS, phyloP100way_vertebrate, phyloP30way_mammalian, phyloP17way_primate, phastCons100way_vertebrate, phastCons30way_mammalian
-          # phastCons17way_primate, SiPhy_29way_logOdds, LIST-S2_score, gnomAD_exomes_AC, gnomAD_exomes_AF, gnomAD_genomes_AC, gnomAD_genomes_AF
+  
+  ### Columns to keep
+  sc <- c("chr", "pos.1.based.", "ref", "alt",
+          "aapos", "genename", "Ensembl_geneid", "Ensembl_transcriptid", "Ensembl_proteinid",   
+          "HGVSp_ANNOVAR",
+          "HGVSc_VEP", "HGVSp_VEP", "APPRIS",  
+          "VEP_canonical",
+          "REVEL_score", "CADD_phred", "SIFT_score" , "SIFT4G_score",            
+          "Polyphen2_HDIV_score", "Polyphen2_HVAR_score", "PROVEAN_score", "M.CAP_score",             
+          "VEST4_score", "FATHMM_score", "MetaSVM_score", "MetaLR_score",            
+          "ClinPred_score", "MutationTaster_score", "MutationAssessor_score", "DANN_score",              
+          "MutPred_score", "MVP_score", "MPC_score" , "LRT_score",               
+          "PrimateAI_score" , "DEOGEN2_score", "BayesDel_addAF_score", "BayesDel_noAF_score",     
+          "fathmm.MKL_coding_score", "fathmm.XF_coding_score", "Eigen.raw_coding", "Eigen.PC.raw_coding",     
+          "GenoCanyon_score", "integrated_fitCons_score", "GM12878_fitCons_score", "H1.hESC_fitCons_score",   
+          "HUVEC_fitCons_score", "LINSIGHT", "GERP.._RS", "phyloP100way_vertebrate", "phyloP30way_mammalian",     
+          "phyloP17way_primate" , "phastCons100way_vertebrate", "phastCons30way_mammalian", "phastCons17way_primate",    
+          "SiPhy_29way_logOdds", "LIST.S2_score", "gnomAD_exomes_AC", "gnomAD_exomes_AF", "gnomAD_genomes_AC", "gnomAD_genomes_AF"
   )
   
   genotypes <- reactive({
     
     req(goi(), nrow(transcript_info())>0)
     
+    # Retrieve scores for selected transcript from dbNSFP database by genomics position (index)
     genotypes <- tabix.read.table(file.path(path_to_db, file_dbNSFP), transcript_info()$position, col.names = TRUE, stringsAsFactors = FALSE)
+    
+    # Subset by transcript and select columns of interest
     genotypes <- genotypes[grep(toi(), genotypes$Ensembl_transcriptid),sc]
     
+    # Produce error if scores are not available for this transcript
     validate(
       need(nrow(genotypes) > 0, "No transcript information available")
     )
@@ -146,6 +171,7 @@ app_server <- function( input, output, session ) {
                                      "HGVSp_VEP", 
                                      "APPRIS", 
                                      "VEP_canonical", 
+                                     "REVEL_score", 
                                      "SIFT_score", 
                                      "SIFT4G_score", 
                                      "Polyphen2_HDIV_score", 
@@ -373,87 +399,29 @@ app_server <- function( input, output, session ) {
   
   ## Draw protein plot
   plotProtein <- reactive({
-    req(goi(), nrow(protein_info())>0)
+    req(goi(), length(protein_id())>0)
     
-    dat <- protein_info_domain()
+    protein_id <- protein_id()
+    protein_info_domain <- protein_info_domain()
     protein_length <- protein_length()
-    
-    plot_protein <- ggplot() + 
-      geom_rect(aes(xmin = 1, xmax = protein_length, ymin = -1, ymax = 1), fill = "grey",  size = .25) +
-      ylim(-2.5, 10) +
-      scale_x_continuous(expand = c(0,0), breaks = x_axis_breaks(protein_length))+
-      theme_minimal() +
-      labs(title = protein_info()$uniprot_id, x = "Amino acid position") + 
-      theme(axis.text.y = element_blank(),
-            panel.grid = element_blank(),
-            axis.title.y = element_blank(),
-            legend.position = "bottom",
-            plot.margin = margin(.1, .15, .1, .58, unit = "in")
-      )
-    
-    if("CHAIN" %in% dat$type) {
-      plot_protein <- plot_protein +
-        geom_rect(data = dat %>%
-                    dplyr::filter(type== "CHAIN") %>% 
-                    arrange(desc(begin)), #why arrange desc?
-                  aes(xmin = begin, xmax = end, ymin = -1, ymax = 1), fill = "grey40", size = .25) + 
-        scale_fill_nejm(name = "Chain peptide")
-    } 
-    
-    if("SIGNAL" %in% dat$type ){
-      plot_protein <- plot_protein +
-        geom_rect(data = dat %>%
-                    dplyr::filter(type== "SIGNAL") %>%
-                    arrange(desc(begin)), aes(xmin = begin, xmax = end, ymin = -1, ymax = 1, fill = description), size = .25) + 
-        scale_fill_nejm(name = "Signal peptide")
-    } 
-    
-    if("REGION" %in% dat$type ) {
-      plot_protein <- plot_protein +
-        new_scale_fill() +
-        geom_rect(data=dat %>%
-                    dplyr::filter(type == "REGION") %>%
-                    arrange(desc(begin)), aes(xmin=begin, xmax=end, ymin=-2, ymax=2, fill=description), size=.25) +
-        scale_fill_manual(values = getPalette(colourCount()), name="Region")
-    } 
-    
-    if(nrow(dat[! dat$type %in% c("CHAIN", "REGION", "SIGNAL"),]) > 0 ) {
-      plot_protein <- plot_protein + 
-        new_scale_fill() +
-        geom_rect(data=dat %>%
-                    dplyr::filter(! type %in% c("CHAIN", "REGION", "SIGNAL")) %>%
-                    arrange(desc(begin)), aes(xmin=begin, xmax=end, ymin=-.5, ymax=.5, fill=description),size=.25) + 
-        scale_fill_manual(values = getPalette2(colourCount()), name="Domain")
-    } 
-    
-    # Add segments
+    color_count <- colourCount()
     clinvar_goi <- clinvar_goi()
+    toi_nm_short <- toi_nm_short()
+
+    validate(
+      need(nrow(protein_info_domain) > 0, "No protein domain information available")
+    )
     
-    if(nrow(clinvar_goi)>0) {
-      
-      clinvar_canonical_pathogenic <- dplyr::filter(clinvar_goi, RefSeq.transcript.short == toi_nm_short(), Label == "pathogenic")
-      
-      if(nrow(clinvar_canonical_pathogenic)>0) {
-        
-        plot_protein <- plot_protein +
-          geom_segment(data = clinvar_canonical_pathogenic,
-                       aes(x = as.numeric(AA.position), xend = as.numeric(AA.position),
-                           y = 2.1, yend = 3),
-                       color = "black",
-                       size = .4) +
-          geom_point(data = clinvar_canonical_pathogenic,
-                     aes(x = as.numeric(AA.position), y = 3),
-                     shape = 21, fill = "red", alpha = .3)
-      }
-    }
     
+    p <- plot_protein_domain(protein_id, protein_info_domain, protein_length, color_count, clinvar_goi, toi_nm_short)
+    # Add segments for selected rows
     rct_segments <- rct_segments()
     rct_segments <- dplyr::filter(rct_segments, !is.na(aa_pos))
     
     # Add color for selected rows
     if(nrow(rct_segments) > 0) {
       
-      plot_protein <- plot_protein + 
+      p <- p + 
         new_scale_fill() +
         scale_fill_manual(values=cols, breaks=legend_order, name = "Clinical significance") +
         geom_text_repel(data = rct_segments,
@@ -479,7 +447,7 @@ app_server <- function( input, output, session ) {
       
     }
     
-    return(plot_protein)
+    return(p)
     
   })
   
@@ -615,7 +583,7 @@ app_server <- function( input, output, session ) {
     tidy_data <- tidy_data()
     selected_scores <- input$selectscore
     
-    plot_protein(clinvar_goi, transcript_info, tidy_data, selected_scores)
+    plot_violin(clinvar_goi, transcript_info, tidy_data, selected_scores)
     
   })
   
@@ -708,8 +676,20 @@ app_server <- function( input, output, session ) {
   # Section 3: Tables --------------------------------------------------------
   # ClinVar table
   
+  AA.exchange <- position <- AA.position<- ALT <- CDS.exchange <- `Chromosomal position` <- Chromosome <- Chromosome.position <- ClinVar <- ClinVar.ID <- 
+    Clinical.significance <- Consequence <- Ensembl_transcriptid <- Gene.symbol <-
+    HGVSc <- HGVSc_VEP <- HGVSp <- HGVSp_VEP <- InSilicoScore <- `LIST-S2` <- Label <- Origin <- 
+    Phenotype <- REF <- REVEL <- RefSeq.transcript <- RefSeq.transcript.short <- Review <- 
+    Type <- VEP_canonical <- aa_label <- aa_pos <- aapos <- begin <- cds_label <- cds_pos <-chr <- 
+    color <- datatable <- description <- end <- exon_seq_end <- exon_seq_start <- 
+    formatStyle <- gnomAD <- gnomAD_exomes_AC <- gnomAD_genomes_AC <- 
+    gnomAD_genomes_AF <- group2 <- ndensity <- p.adj.signif <- pos <-pos.1.based. <- score <- 
+    score_type <- styleInterval <- tx_id <- tx_seq_end <- tx_seq_start <- type <- uniprot_id <- value <- NULL
+  
+  
   output$table1 <- DT::renderDataTable({
     req(goi())
+    
     
     tbl <- clinvar_goi()
     
