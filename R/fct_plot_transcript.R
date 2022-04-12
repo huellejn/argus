@@ -1,12 +1,15 @@
-#' plot_gene 
+#' plot_transcript 
 #'
-#' @description A fct function
+#' @description Function to create a graphical depiction of a transcript. The x-axis shows the genomic position according to GRCh38.
 #'
 #' @return The return value, if any, from executing the function.
 #'
 #' @noRd
 
 plot_transcript <- function(transcript_info, exon_info, toi, toi_nm, toi_nm_short, clinvar_goi) {
+  
+  # Suppress 'No visible binding for global variable' message
+  tx_seq_start <- tx_seq_end <- exon_seq_start <- exon_seq_end <- RefSeq.transcript.short <- Label <- Chromosome.position <- NULL
   
   # Base plot
   p <- ggplot() + 

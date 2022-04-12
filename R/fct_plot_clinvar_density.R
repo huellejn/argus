@@ -2,14 +2,13 @@
 #'
 #' @description Functions to create a density plot of ClinVar variants.
 #'
-#' @return Returns a density plot of pathogenic ClinVar variants or an empty plot if no pathogenic entries are available in ClinVar.
+#' @return Returns a density plot of pathogenic and benign ClinVar variants or an empty plot if no entries are available in ClinVar.
 #'
 #' @noRd
 
 plot_density_clinvar_empty <- function(protein_length) {
   
   p <- ggplot() +
-    theme_void() +
     scale_x_continuous(limits = c(1, protein_length), breaks = x_axis_breaks(protein_length))+
     scale_y_continuous(expand = c(0,0)) +
     labs(x = "Amino acid position", y = "ClinVar variant density") + 
@@ -26,6 +25,9 @@ plot_density_clinvar_empty <- function(protein_length) {
 }
 
 plot_density_clinvar <-  function(dat, protein_length, cols_selected) {
+  
+  # Suppress 'No visible binding for global variable' message
+  AA.position <- ndensity <- Label <- NULL
   
   p <- ggplot(data = dat) + 
     geom_density(aes(x = AA.position, y = after_stat(ndensity), fill = Label), adjust = 0.1, alpha = .7, linetype = "blank") +  

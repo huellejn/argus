@@ -1,12 +1,15 @@
 #' plot_score 
 #'
-#' @description A fct function
+#' @description Function to create a density plot and a heatmap of functional prediction scores.
 #'
-#' @return The return value, if any, from executing the function.
+#' @return Returns a plot of in-silico and conservation prediction scores.
 #'
 #' @noRd
 
 plot_score <- function(dat, selected_scores, score_index, protein_length, goi, toi, dbNSFP_scores) {
+  
+  # Suppress 'No visible binding for global variable' message
+  score_type <- aapos <- score <- NULL
   
   if(length(selected_scores) >= score_index) {
     

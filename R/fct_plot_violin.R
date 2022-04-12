@@ -1,12 +1,15 @@
 #' plot_violin 
 #'
-#' @description A fct function
+#' @description Function to create a violin plot showing the distribution of functional prediction scores.
 #'
-#' @return The return value, if any, from executing the function.
+#' @return Returns a plot of the distribution of functional scores and variant frequencies in gnomAD.
 #'
 #' @noRd
 
-plot_protein <- function(clinvar_goi, transcript_info, tidy_data, selected_scores) {
+plot_violin <- function(clinvar_goi, transcript_info, tidy_data, selected_scores) {
+  
+  # Suppress 'No visible binding for global variable' message
+  Label <- Chromosome.position <- REF <- ALT <- ClinVar <- score_type <- score <- gnomAD_exomes_AC <- gnomAD_genomes_AC <- gnomAD <- InSilicoScore <- value <- p.adj.signif <- group2 <- NULL
   
   if(length(selected_scores) > 0 ) {
     

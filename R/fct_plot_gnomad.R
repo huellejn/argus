@@ -1,12 +1,15 @@
 #' plot_gnomad 
 #'
-#' @description A fct function
+#' @description Function to create a bar plot of gnomAD variants.
 #'
-#' @return The return value, if any, from executing the function.
+#' @return Returns a bar plot of gnomAD variants by amino acid position in the protein.
 #'
 #' @noRd
 
 plot_gnomad <- function(dat, protein_length) {
+  
+  # Suppress 'No visible binding for global variable' message
+  aapos <- gnomAD_exomes_AC <- gnomAD_genomes_AC <- Source <- Count <- Sum <- NULL
   
   df_gnomad <- dat %>%
     dplyr::select(aapos, gnomAD_exomes_AC, gnomAD_genomes_AC) %>%
