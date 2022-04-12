@@ -1,6 +1,6 @@
 #' help UI Function
 #'
-#' @description A shiny Module.
+#' @description Shiny module containing the 'Help' section as of the UI.
 #'
 #' @param id,input,output,session Internal parameters for {shiny}.
 #'
