@@ -1,8 +1,8 @@
 #' utils 
 #'
-#' @description A utils function
+#' @description A collection of utils function
 #'
-#' @return The return value, if any, from executing the utility.
+#' @return Returns input data and parameter settings.
 #'
 #' @noRd
 #' @import RColorBrewer
@@ -14,26 +14,30 @@ getPalette = colorRampPalette(RColorBrewer::brewer.pal(8, "Set1"))
 getPalette2 = colorRampPalette(RColorBrewer::brewer.pal(8, "Set2"))
 
 # Path to data
-path_to_data <- "/Users/huellein/Documents/project/aRgus/app/data"
-path_to_db <- "/Users/huellein/Documents/project/aRgus/app/data"
+path_to_data <- "/mnt/data"
+path_to_db <- "/mnt/data"
 
 # Read data
 ## Canonical transcript
-load(file.path(path_to_data, "canonical_transcript_dev.RData"))
+load(file.path(path_to_data, "canonical_transcripts.RData"))
 
 ## ClinVar
-load(file.path(path_to_data, "clinvar_jan21_dev.RData"))
-clinvar_version <- "January 2021"
+load(file.path(path_to_data, "clinvar.RData"))
+clinvar <- clinvar[!clinvar$ClinVar.ID == "CV:15624", ]
+#clinvar_version <- gsub(".*clinvar_[].RData", "", clinvar_file)
 
 ## Gene info
-load(file.path(path_to_data, "gene_info_dev.RData"))
+load(file.path(path_to_data, "gene_info.RData"))
+
+# Protein info
+baseurl <- "https://www.ebi.ac.uk/proteins/api/features?offset=0&size=100&accession="
 
 ## dbNSFP scores
-load(file.path(path_to_data, "dbNSFP_scores_dev.RData"))
+load(file.path(path_to_data, "gene_info.RData"))
 
 ## dbNSFP
-file_dbNSFP <- "dbNSFP4.1a_grch38.gz"
-dbNSFP_version <- "dbNSFP4.1a_grch38"
+dbNSFP_version <- "dbNSFPv4.3a_GRCh38"
+file_dbNSFP <- paste(dbNSFP_version, "gz", sep = ".")
 
 ## Input values for gene of interest (goi)
 val_goi <- canonical_transcript$Gene.symbol
