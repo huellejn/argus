@@ -15,16 +15,18 @@ getPalette2 = colorRampPalette(RColorBrewer::brewer.pal(8, "Set2"))
 
 # Path to data
 path_to_data <- "/mnt/data"
-path_to_db <- "/mnt/data"
+path_to_db <- "/mnt/db"
 
 # Read data
 ## Canonical transcript
 load(file.path(path_to_data, "canonical_transcripts.RData"))
 
 ## ClinVar
-load(file.path(path_to_data, "clinvar.RData"))
-clinvar <- clinvar[!clinvar$ClinVar.ID == "CV:15624", ]
-#clinvar_version <- gsub(".*clinvar_[].RData", "", clinvar_file)
+if (file.exists(file.path(path_to_db, "clinvar.RData"))) {
+	load(file.path(path_to_db, "clinvar.RData"))
+	clinvar <- clinvar[!clinvar$ClinVar.ID == "CV:15624", ]
+	#clinvar_version <- gsub(".*clinvar_[].RData", "", clinvar_file)
+}
 
 ## Gene info
 load(file.path(path_to_data, "gene_info.RData"))
@@ -33,7 +35,7 @@ load(file.path(path_to_data, "gene_info.RData"))
 baseurl <- "https://www.ebi.ac.uk/proteins/api/features?offset=0&size=100&accession="
 
 ## dbNSFP scores
-load(file.path(path_to_data, "gene_info.RData"))
+load(file.path(path_to_data, "dbNSFP_scores.RData"))
 
 ## dbNSFP
 dbNSFP_version <- "dbNSFPv4.3a_GRCh38"
