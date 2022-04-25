@@ -1,11 +1,11 @@
 # Add a package
-usethis::use_package( "shinycssloaders" )
+usethis::use_package( "jsonlite" )
 
 # Add a module
 golem::add_module( name = "variants" )
 
 # Add a function
-golem::add_fct( "name_of_function" ) 
+golem::add_fct( "plot_protein" ) 
 
 golem::add_utils( "utils" )
 
