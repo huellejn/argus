@@ -6,7 +6,7 @@
 #'
 #' @noRd
 
-plot_violin <- function(clinvar_goi, transcript_info, tidy_data, selected_scores) {
+plot_violin <- function(clinvar_goi, transcript_info, tidy_data, selected_scores, font_size) {
   
   # Suppress 'No visible binding for global variable' message
   Label <- Chromosome.position <- REF <- ALT <- ClinVar <- score_type <- score <- gnomAD_exomes_AC <- gnomAD_genomes_AC <- gnomAD <- InSilicoScore <- value <- p.adj.signif <- group2 <- NULL
@@ -49,39 +49,70 @@ plot_violin <- function(clinvar_goi, transcript_info, tidy_data, selected_scores
         mutate(value = factor(value, levels = c("ClinVar_pathogenic", "ClinVar_benign", "gnomAD", "InSilico"))) %>%
         dplyr::filter(!is.na(value), ! is.na(score)) 
       
-      violin_y_lim <- dat %>%
-        group_by(score_type) %>%
-        summarise(
-          max = max(score, na.rm=T),
-          max_plus = max + max * 0.1) %>%
-        arrange(score_type) 
+      # Select scores with sufficent number of values for a t-test
+      scores_sufficient <- dat %>%
+        group_by(score_type, value) %>%
+        count() %>% 
+        filter(n > 1) %>%
+        ungroup() %>%
+        count(score_type) %>%
+        filter(n > 1) %>%
+        pull(score_type)
       
-      dat_stat <- dat %>%
-        group_by(score_type) %>%
-        t_test(score ~ value) %>%
-        adjust_pvalue() %>%
-        add_significance("p.adj") %>% 
-        add_xy_position(x = "value", scales = "free_y", step.increase = .3) %>%
-        mutate(p.adj.signif = gsub("\\*\\*\\*\\*", "\\*\\*\\*", p.adj.signif)) %>%
-        filter(group2 == "InSilico")
+      dat <- dat %>%
+        filter(score_type %in% scores_sufficient)
       
-      p <- ggplot(dat, aes(x = value, y = score)) +
-        geom_violin(aes(fill = value), draw_quantiles = c(.25, .5, .75), alpha = .5 ) +
-        ggpubr::stat_pvalue_manual(dat_stat, label = "p.adj.signif", tip.length = 0, hide.ns = T, x = "group1") +
-        scale_fill_manual(values = violin_color, name = "Group") +
-        facet_wrap(~ score_type, scales = "free_y") +
-        theme_bw() +
-        theme(
-          strip.background = element_blank(),
-          strip.text = element_text(size = 12),
-          panel.grid = element_blank(),
-          axis.title.x = element_blank(),
-          axis.text.x = element_blank(),
-          axis.ticks.x = element_blank()
-        ) +
-        labs(y = "Score value") +
-        scale_y_continuous(expand = expansion(mult = c(0.05, 0.10))) 
-      
+      if(nrow(dat) > 0) {
+        violin_y_lim <- dat %>%
+          group_by(score_type) %>%
+          summarise(
+            max = max(score, na.rm=T),
+            max_plus = max + max * 0.1) %>%
+          arrange(score_type) 
+        
+        dat_stat <- dat %>%
+          group_by(score_type) %>%
+          t_test(score ~ value) %>%
+          adjust_pvalue() %>%
+          add_significance("p.adj") %>% 
+          add_xy_position(x = "value", scales = "free_y", step.increase = .3) %>%
+          mutate(p.adj.signif = gsub("\\*\\*\\*\\*", "\\*\\*\\*", p.adj.signif)) %>%
+          filter(group2 == "InSilico")
+        
+        p <- ggplot(dat, aes(x = value, y = score)) +
+          geom_violin(aes(fill = value), draw_quantiles = c(.25, .5, .75), alpha = .5 ) +
+          ggpubr::stat_pvalue_manual(dat_stat, label = "p.adj.signif", tip.length = 0, hide.ns = T, x = "group1") +
+          scale_fill_manual(values = violin_color, name = "Group") +
+          facet_wrap(~ score_type, scales = "free_y") +
+          theme_bw() +
+          theme(
+            strip.background = element_blank(),
+            strip.text = element_text(size = font_size),
+            panel.grid = element_blank(),
+            axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            axis.title.y = element_text(size = font_size),
+            axis.text.y = element_text(size = font_size-4),
+            legend.title = element_text(size = font_size),
+            legend.text = element_text(size = font_size-4)
+          ) +
+          labs(y = "Score value") +
+          scale_y_continuous(expand = expansion(mult = c(0.05, 0.10))) 
+        
+      } else {
+        p <- ggplot() + 
+          theme_void() + 
+          theme_bw() +
+          theme(
+            panel.grid = element_blank(),
+            axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
+            axis.ticks.x = element_blank()
+          ) +
+          labs(y = "Score value")
+        
+      }
     } else {
       
       p <- ggplot() + 

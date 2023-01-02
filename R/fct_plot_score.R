@@ -6,7 +6,7 @@
 #'
 #' @noRd
 
-plot_score <- function(dat, selected_scores, score_index, protein_length, goi, toi, dbNSFP_scores, dat_segments) {
+plot_score <- function(dat, selected_scores, score_index, protein_length, goi, toi, dbNSFP_scores, dat_segments, font_size, font_size_label) {
   
   # Suppress 'No visible binding for global variable' message
   aa_label <- aa_pos <- score_type <- aapos <- score <- NULL
@@ -36,8 +36,8 @@ plot_score <- function(dat, selected_scores, score_index, protein_length, goi, t
               axis.text = element_blank(), 
               panel.grid.minor = element_blank(),
               axis.ticks.y = element_blank(),
-              plot.margin = margin(.1, .1, 0, .65, unit = "in"),
-              plot.title = element_text(hjust = .5)
+              plot.margin = margin(.2, .1, 0, .65, unit = "in"),
+              plot.title = element_text(hjust = .5, size = font_size)
         )
       
       # Meta data for the scores
@@ -68,7 +68,11 @@ plot_score <- function(dat, selected_scores, score_index, protein_length, goi, t
               panel.grid = element_blank(),
               axis.text.y = element_blank(),
               axis.title.y = element_blank(),
-              plot.margin = margin(0, .1, .1, .65, unit = "in")
+              plot.margin = margin(0, .2, .1, .65, unit = "in"),
+              axis.title.x = element_text(size = font_size),
+              axis.text.x = element_text(size = font_size-4),
+              legend.title = element_text(size = font_size),
+              legend.text = element_text(size = font_size-8)
         )
       
       # Add selected variants
@@ -83,7 +87,7 @@ plot_score <- function(dat, selected_scores, score_index, protein_length, goi, t
                           direction = "x",
                           angle = 90,
                           segment.size = .4,
-                          size = 3,
+                          size = font_size_label,
                           segment.linetype = "dotted",
                           max.overlaps = Inf)  
         
@@ -102,7 +106,9 @@ plot_score <- function(dat, selected_scores, score_index, protein_length, goi, t
         theme(
           panel.grid.minor = element_blank(),
           axis.ticks.y = element_blank(),
-          plot.margin = margin(.1, .1, .1, .65, unit = "in")
+          plot.margin = margin(.1, .1, .1, .65, unit = "in"),
+          axis.title.x = element_text(size = font_size),
+          axis.text.x = element_text(size = font_size-4)
         )
       } 
     return(p)

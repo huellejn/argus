@@ -6,7 +6,7 @@
 #'
 #' @noRd
 
-plot_protein_domain <- function(protein_id, protein_info_domain, protein_length, color_count, clinvar_goi, toi_nm_short) {
+plot_protein_domain <- function(protein_id, protein_info_domain, protein_length, color_count, clinvar_goi, toi_nm_short, font_size) {
   
   # Suppress 'No visible binding for global variable' message
   type <- begin <- end <- description <- RefSeq.transcript.short <- Label <- AA.position <- NULL
@@ -21,7 +21,12 @@ plot_protein_domain <- function(protein_id, protein_info_domain, protein_length,
           panel.grid = element_blank(),
           axis.title.y = element_blank(),
           legend.position = "bottom",
-          plot.margin = margin(.1, .15, .1, .58, unit = "in")
+          plot.margin = margin(.1, .2, .1, .58, unit = "in"),
+          plot.title = element_text(size = font_size),
+          axis.title.x = element_text(size = font_size),
+          axis.text.x = element_text(size = font_size-4),
+          legend.title = element_text(size = font_size),
+          legend.text = element_text(size = font_size-4)
     )
   
   if("CHAIN" %in% protein_info_domain$type) {

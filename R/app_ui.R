@@ -59,10 +59,23 @@ app_ui <- function(request) {
                                 
                                 tags$hr(style="border-color: #95a5a6;"),
                                 
+                                # Set text size
+                                h5("Font size"),
+                                fluidRow(
+                                  column(12, numericInput("textsize", "Base size", value = 18, step = 1, min = 1))
+                                ),
+                                fluidRow(
+                                  column(12, numericInput("textsizelabel", "Label size", value = 4, step = .5, min = .5))
+                                ),
+                                fluidRow(column(12, actionButton("btn_textsize", "Change text size"))),
+
+                                tags$hr(style="border-color: #95a5a6;"),
+                                
+                                # Figure download options
                                 h5("Figure download options"),
                                 radioButtons(
                                   inputId = 'figureformat', label = 'Download format',
-                                  choices = c('PNG', 'SVG'),
+                                  choices = c('PNG'),
                                   selected = 'PNG'
                                 ),
                                 fluidRow(

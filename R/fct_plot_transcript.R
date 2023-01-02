@@ -6,7 +6,7 @@
 #'
 #' @noRd
 
-plot_transcript <- function(transcript_info, exon_info, toi, toi_nm, toi_nm_short, clinvar_goi) {
+plot_transcript <- function(transcript_info, exon_info, toi, toi_nm, toi_nm_short, clinvar_goi, font_size) {
   
   # Suppress 'No visible binding for global variable' message
   tx_seq_start <- tx_seq_end <- exon_seq_start <- exon_seq_end <- RefSeq.transcript.short <- Label <- Chromosome.position <- NULL
@@ -22,7 +22,10 @@ plot_transcript <- function(transcript_info, exon_info, toi, toi_nm, toi_nm_shor
     labs(title = ifelse(!is.na( toi_nm ), paste( toi, toi_nm, sep = " / "), toi), x = "Genome position" ) + 
     theme(axis.text.y = element_blank(),
           axis.title.y = element_blank(),
-          panel.grid = element_blank()
+          panel.grid = element_blank(),
+          axis.title.x = element_text(size = font_size),
+          axis.text.x = element_text(size = font_size-4),
+          plot.title = element_text(size = font_size)
     )
   
   # Add segments for pathogenic variants

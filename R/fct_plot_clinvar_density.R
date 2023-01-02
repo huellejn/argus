@@ -6,7 +6,7 @@
 #'
 #' @noRd
 
-plot_density_clinvar_empty <- function(protein_length) {
+plot_density_clinvar_empty <- function(protein_length, font_size) {
   
   p <- ggplot() +
     scale_x_continuous(limits = c(1, protein_length), breaks = x_axis_breaks(protein_length))+
@@ -17,14 +17,16 @@ plot_density_clinvar_empty <- function(protein_length) {
       axis.text.y = element_blank(),
       axis.ticks.y = element_blank(),
       plot.margin = margin(.1, .1, .1, .4, unit = "in"),
-      legend.position = "bottom"
+      legend.position = "bottom",
+      axis.title.x = element_text(size = font_size),
+      axis.text.x = element_text(size = font_size-4)
     )
   
   return(p)
   
 }
 
-plot_density_clinvar <-  function(dat, protein_length, cols_selected) {
+plot_density_clinvar <-  function(dat, protein_length, cols_selected, font_size) {
   
   # Suppress 'No visible binding for global variable' message
   AA.position <- ndensity <- Label <- NULL
@@ -37,13 +39,19 @@ plot_density_clinvar <-  function(dat, protein_length, cols_selected) {
     scale_y_continuous(expand = c(0,0)) +
     scale_fill_manual("Clinical significance", values = cols_selected) + 
     scale_color_manual("Clinical significance", values = cols_selected) + 
-    labs(x = "Amino acid position", y = "ClinVar variant density") + 
+    labs(title = "ClinVar", x = "Amino acid position", y = "Variant density") + 
     theme_classic() + 
     theme(
       axis.text.y = element_blank(),
       axis.ticks.y = element_blank(),
       legend.position = "bottom",
-      plot.margin = margin(.1, .1, .1, .4, unit = "in")
+      plot.margin = margin(.1, .2, .1, .4, unit = "in"),
+      plot.title = element_text(hjust = .5, size = font_size),
+      axis.title.y = element_text(size = font_size),
+      axis.title.x = element_text(size = font_size),
+      axis.text.x = element_text(size = font_size-4),
+      legend.title = element_text(size = font_size),
+      legend.text = element_text(size = font_size-4)
     )
   
   return(p)

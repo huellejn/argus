@@ -6,7 +6,7 @@
 #'
 #' @noRd
 
-plot_gnomad <- function(dat, protein_length, dat_segments) {
+plot_gnomad <- function(dat, protein_length, dat_segments, font_size, font_size_label) {
   
   # Suppress 'No visible binding for global variable' message
   aa_label <- aa_pos <- aapos <- gnomAD_exomes_AC <- gnomAD_genomes_AC <- Source <- Count <- Sum <- NULL
@@ -27,7 +27,11 @@ plot_gnomad <- function(dat, protein_length, dat_segments) {
       panel.grid.major.x = element_blank(),
       panel.grid.minor.x = element_blank(),
       panel.grid.minor.y = element_blank(),
-      plot.margin = margin(.1, .1, 0, .05, unit = "in")
+      plot.margin = margin(.1, .2, 0, .05, unit = "in"),
+      axis.title.y = element_text(size = font_size-2),
+      axis.text.y = element_text(size = font_size-4),
+      axis.title.x = element_text(size = font_size-2),
+      axis.text.x = element_text(size = font_size-4)
     )
   )
   
@@ -35,20 +39,19 @@ plot_gnomad <- function(dat, protein_length, dat_segments) {
   p1 <- ggplot(data = dplyr::filter(df_gnomad, Source == "gnomAD_exomes_AC"), aes(x = aapos, y = Sum)) +
     geom_col(color = "forestgreen", fill = "forestgreen") +
     scale_y_log10() +
-    labs(y = "gnomAD exomes count") + 
+    labs(title = "gnomAD", y = "Counts (exomes)") + 
     cm_layers +
     theme(
       axis.title.x = element_blank(),
       axis.text.x = element_blank(),
-      plot.margin = margin(.1, .1, 0, .05, unit = "in"),
-      plot.title = element_text(hjust = .5)
+      plot.title = element_text(hjust = .5, size = font_size)
     )
   
   # Plot gnomAD genomes
   p2 <- ggplot(data = dplyr::filter(df_gnomad, Source == "gnomAD_genomes_AC"), aes(x = aapos, y = Sum)) +
     geom_col(color = "deepskyblue", fill = "deepskyblue") +
     scale_y_continuous(trans = reverselog_trans(10), expand = c(0,0)) +
-    labs(y = "gnomAD genomes count", x = "Amino acid position") + 
+    labs(y = "Counts (genomes)", x = "Amino acid position") + 
     cm_layers
   
   # Add selected variants
@@ -63,7 +66,7 @@ plot_gnomad <- function(dat, protein_length, dat_segments) {
                       direction = "x",
                       angle = 90,
                       segment.size = .4,
-                      size = 3,
+                      size = font_size_label,
                       segment.linetype = "dotted",
                       max.overlaps = Inf)  
     
@@ -75,7 +78,7 @@ plot_gnomad <- function(dat, protein_length, dat_segments) {
                       direction = "x",
                       angle = 90,
                       segment.size = .4,
-                      size = 3,
+                      size = font_size_label,
                       segment.linetype = "dotted",
                       max.overlaps = Inf)  
     

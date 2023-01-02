@@ -331,7 +331,20 @@ app_server <- function( input, output, session ) {
     
   })
   
+  
+  ## Adjust font size when button is clicked
+  
+  ### Base font size for the plots
+  base_font <- eventReactive(input$btn_textsize, {
+    input$textsize
+  }, ignoreNULL = FALSE)
+  
+  ### Base font size for the labels (geom_text_repel)
+  base_font_label <- eventReactive(input$btn_textsize, {
+    input$textsizelabel
+  }, ignoreNULL = FALSE)
 
+  
   ## Draw gene plot
   plotTranscript <- reactive({
     
@@ -342,13 +355,15 @@ app_server <- function( input, output, session ) {
     exon_info <- exon_info()
     clinvar_goi <- clinvar_goi()
     rct_segments <- rct_segments()
+    base_font <- base_font()
+    base_font_label <- base_font_label()
     
     validate(
       need(nrow(transcript_info) > 0, "No transcript information available")
     )
     
     # Base plot
-    p <- plot_transcript(transcript_info, exon_info, toi, toi_nm, toi_nm_short, clinvar_goi)
+    p <- plot_transcript(transcript_info, exon_info, toi, toi_nm, toi_nm_short, clinvar_goi, base_font)
     
     # Add labels and color for selected rows
     if(nrow(rct_segments) > 0) {
@@ -364,7 +379,7 @@ app_server <- function( input, output, session ) {
                         angle = 90,
                         vjust = 1,
                         segment.size = .4,
-                        size = 3,
+                        size = base_font_label,
                         segment.linetype = "dotted",
                         max.overlaps = Inf) + 
         geom_segment(data = rct_segments,
@@ -416,13 +431,15 @@ app_server <- function( input, output, session ) {
     color_count <- colourCount()
     clinvar_goi <- clinvar_goi()
     toi_nm_short <- toi_nm_short()
-
+    base_font <- base_font()
+    base_font_label <- base_font_label()
+    
     validate(
       need(nrow(protein_info_domain) > 0, "No protein domain information available")
     )
     
     
-    p <- plot_protein_domain(protein_id, protein_info_domain, protein_length, color_count, clinvar_goi, toi_nm_short)
+    p <- plot_protein_domain(protein_id, protein_info_domain, protein_length, color_count, clinvar_goi, toi_nm_short, base_font)
     # Add segments for selected rows
     rct_segments <- rct_segments()
     rct_segments <- dplyr::filter(rct_segments, !is.na(aa_pos))
@@ -443,7 +460,7 @@ app_server <- function( input, output, session ) {
                         angle = 90,
                         vjust = 1,
                         segment.size = .3,
-                        size = 3,
+                        size = base_font_label,
                         segment.linetype = "dotted",
                         force = 2,
                         max.overlaps = 200) +
@@ -474,6 +491,8 @@ app_server <- function( input, output, session ) {
     protein_length <- protein_length()
     clinvar_goi <- clinvar_goi()
     rct_segments <- rct_segments()
+    base_font <- base_font()
+    base_font_label <- base_font_label()
     
     if(nrow(clinvar_goi) > 0 & length(selected_clinsig) > 0) {
       
@@ -482,8 +501,9 @@ app_server <- function( input, output, session ) {
       if( nrow(clinvar_goi_density) > 0) {
         
         cols_selected <- cols[names(cols) %in% selected_clinsig]
-        p <- plot_density_clinvar(dat = clinvar_goi_density, protein_length, cols_selected)
+        p <- plot_density_clinvar(dat = clinvar_goi_density, protein_length, cols_selected, base_font)
         
+  
         # Add labels and color for selected rows
         if(nrow(rct_segments) > 0) {
           
@@ -498,7 +518,7 @@ app_server <- function( input, output, session ) {
                             direction = "x",
                             angle = 90,
                             segment.size = .4,
-                            size = 3,
+                            size = base_font_label,
                             segment.linetype = "dotted",
                             max.overlaps = Inf) 
           
@@ -531,8 +551,10 @@ app_server <- function( input, output, session ) {
     protein_length <- protein_length()
     genotypes <- genotypes()
     rct_segments <- rct_segments()
+    base_font <- base_font()
+    base_font_label <- base_font_label()
     
-    p <- plot_gnomad(dat = genotypes, protein_length, dat_segments = rct_segments)
+    p <- plot_gnomad(dat = genotypes, protein_length, dat_segments = rct_segments, base_font, base_font_label)
 
     return(p)
     
@@ -556,8 +578,10 @@ app_server <- function( input, output, session ) {
     goi <- goi()
     toi <- toi()
     rct_segments <- rct_segments()
+    base_font <- base_font()
+    base_font_label <- base_font_label()
     
-    plot_score(dat = tidy_data, selected_scores, score_index, protein_length, goi, toi, dbNSFP_scores, rct_segments)
+    plot_score(dat = tidy_data, selected_scores, score_index, protein_length, goi, toi, dbNSFP_scores, rct_segments, base_font, base_font_label)
     
   })
   
@@ -578,8 +602,10 @@ app_server <- function( input, output, session ) {
     goi <- goi()
     toi <- toi()
     rct_segments <- rct_segments()
+    base_font <- base_font()
+    base_font_label <- base_font_label()
     
-    plot_score(dat = tidy_data, selected_scores, score_index, protein_length, goi, toi, dbNSFP_scores, rct_segments)
+    plot_score(dat = tidy_data, selected_scores, score_index, protein_length, goi, toi, dbNSFP_scores, rct_segments, base_font, base_font_label)
     
   })
   
@@ -600,8 +626,10 @@ app_server <- function( input, output, session ) {
     goi <- goi()
     toi <- toi()
     rct_segments <- rct_segments()
+    base_font <- base_font()
+    base_font_label <- base_font_label()
     
-    plot_score(dat = tidy_data, selected_scores, score_index, protein_length, goi, toi, dbNSFP_scores, rct_segments)
+    plot_score(dat = tidy_data, selected_scores, score_index, protein_length, goi, toi, dbNSFP_scores, rct_segments, base_font, base_font_label)
     
   })
   
@@ -616,8 +644,9 @@ app_server <- function( input, output, session ) {
     transcript_info <- transcript_info()
     tidy_data <- tidy_data()
     selected_scores <- input$selectscore
+    base_font <- base_font()
     
-    plot_violin(clinvar_goi, transcript_info, tidy_data, selected_scores)
+    plot_violin(clinvar_goi, transcript_info, tidy_data, selected_scores, base_font)
     
   })
   
