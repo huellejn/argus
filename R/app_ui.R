@@ -102,19 +102,19 @@ app_ui <- function(request) {
                              conditionalPanel(
                                condition = "input.selectplot.includes('In silico scores') && input.selectgene.length > 0 && input.selectscore.length > 0",
                                fluidRow(
-                                 column(11, shinycssloaders::withSpinner(plotOutput('plot_scores1', height = '250px'))),
+                                 column(11, shinycssloaders::withSpinner(plotOutput('plot_scores1', height = '300px'))),
                                  column(1, downloadButton('dwnbtn_scores1', '', icon = icon('download') ))
                                )),
                              conditionalPanel(
                                condition = "input.selectplot.includes('In silico scores') && input.selectgene.length > 0 && input.selectscore.length > 1",
                                fluidRow(
-                                 column(11, shinycssloaders::withSpinner(plotOutput('plot_scores2', height = '250px'))),
+                                 column(11, shinycssloaders::withSpinner(plotOutput('plot_scores2', height = '300px'))),
                                  column(1, downloadButton('dwnbtn_scores2', '', icon = icon('download') ))
                                )),
                              conditionalPanel(
                                condition = "input.selectplot.includes('In silico scores') && input.selectgene.length > 0 && input.selectscore.length > 2",
                                fluidRow(
-                                 column(11, shinycssloaders::withSpinner(plotOutput('plot_scores3', height = '250px'))),
+                                 column(11, shinycssloaders::withSpinner(plotOutput('plot_scores3', height = '300px'))),
                                  column(1, downloadButton('dwnbtn_scores3', '', icon = icon('download') ))
                                )),
                              conditionalPanel(

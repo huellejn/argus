@@ -6,10 +6,10 @@
 #'
 #' @noRd
 
-plot_score <- function(dat, selected_scores, score_index, protein_length, goi, toi, dbNSFP_scores) {
+plot_score <- function(dat, selected_scores, score_index, protein_length, goi, toi, dbNSFP_scores, dat_segments) {
   
   # Suppress 'No visible binding for global variable' message
-  score_type <- aapos <- score <- NULL
+  aa_label <- aa_pos <- score_type <- aapos <- score <- NULL
   
   if(length(selected_scores) >= score_index) {
     
@@ -70,6 +70,24 @@ plot_score <- function(dat, selected_scores, score_index, protein_length, goi, t
               axis.title.y = element_blank(),
               plot.margin = margin(0, .1, .1, .65, unit = "in")
         )
+      
+      # Add selected variants
+      if(nrow(dat_segments) > 0) {
+        
+        p1 <- p1 + 
+          geom_segment(data = dat_segments, aes(x = aa_pos, xend = aa_pos, y = -.1, yend = max(dat$score, na.rm=T)/8), color = dat_segments$color) +
+          geom_text_repel(data = dat_segments, 
+                          aes(x = aa_pos, y = max(dat$score, na.rm=T)/8, 
+                              label = aa_label),
+                          nudge_y = max(dat$score, na.rm=T),
+                          direction = "x",
+                          angle = 90,
+                          segment.size = .4,
+                          size = 3,
+                          segment.linetype = "dotted",
+                          max.overlaps = Inf)  
+        
+      }
       
       p <- plot_grid(p1, p2, align = "v", nrow = 2, rel_heights = c(1,1))
     } else {

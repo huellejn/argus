@@ -283,7 +283,7 @@ app_server <- function( input, output, session ) {
     rct_table2_row <- rct_table2_row()
     
     ## Format data
-    plot_transcript_add_segments <- data.frame(
+    df_add_segments <- data.frame(
       cds_pos = integer(), cds_label = character(),
       aa_pos = integer(), aa_label = character(),
       color = character())
@@ -300,7 +300,7 @@ app_server <- function( input, output, session ) {
           aa_pos = AA.position, aa_label,
           color) 
       
-      plot_transcript_add_segments <- rbind(plot_transcript_add_segments, clinvar_goi_selected)
+      df_add_segments <- rbind(df_add_segments, clinvar_goi_selected)
     }
     
     if(length(rct_table2_row) > 0) {
@@ -314,11 +314,20 @@ app_server <- function( input, output, session ) {
                       aa_pos = aapos, aa_label = HGVSp,
                       color) 
       
-      plot_transcript_add_segments <- rbind(plot_transcript_add_segments, genotypes_selected)
+      # Combine selected variants from ClinVar and InSilico scores and add ClinVar status (benign, pathogenic, VUS)
+      for(i in 1:nrow(genotypes_selected) ) {
+        sub <- genotypes_selected[i,]
+        if(sub$aa_label %in% clinvar_goi$AA.exchange) {
+          label <- clinvar_goi$Label[match(sub$aa_label,clinvar_goi$AA.exchange)]
+          genotypes_selected$color[i] <- cols[label]
+        }
+      }
+      
+      df_add_segments <- rbind(df_add_segments, genotypes_selected)
       
     }
     
-    return(plot_transcript_add_segments)
+    return(df_add_segments)
     
   })
   
@@ -464,16 +473,37 @@ app_server <- function( input, output, session ) {
     selected_clinsig <- input$selectclinsig #c("benign", "pathogenic")
     protein_length <- protein_length()
     clinvar_goi <- clinvar_goi()
+    rct_segments <- rct_segments()
     
     if(nrow(clinvar_goi) > 0 & length(selected_clinsig) > 0) {
       
-      clinvar_goi <- dplyr::filter(clinvar_goi, Label %in% selected_clinsig)
+      clinvar_goi_density <- dplyr::filter(clinvar_goi, Label %in% selected_clinsig)
       
-      if( nrow(clinvar_goi) > 0) {
+      if( nrow(clinvar_goi_density) > 0) {
         
         cols_selected <- cols[names(cols) %in% selected_clinsig]
-        p <- plot_density_clinvar(dat = clinvar_goi, protein_length, cols_selected)
+        p <- plot_density_clinvar(dat = clinvar_goi_density, protein_length, cols_selected)
         
+        # Add labels and color for selected rows
+        if(nrow(rct_segments) > 0) {
+          
+          p <- p +
+            geom_segment(data = rct_segments, aes(x = aa_pos, xend = aa_pos, y = -.1, yend = 0), color = rct_segments$color) +
+            geom_text_repel(data = rct_segments,
+                            mapping = aes(x = aa_pos,
+                                          y = 0,
+                                          label = aa_label) ,
+                            color = "black",
+                            nudge_y = .5,
+                            direction = "x",
+                            angle = 90,
+                            segment.size = .4,
+                            size = 3,
+                            segment.linetype = "dotted",
+                            max.overlaps = Inf) 
+          
+        }
+
       } else {
         
         p <- plot_density_clinvar_empty(protein_length)
@@ -493,14 +523,16 @@ app_server <- function( input, output, session ) {
     plotDensity()
   })
   
+  
   ## gnomAD
   plotGnomad <- reactive({
     req(goi())
     
     protein_length <- protein_length()
     genotypes <- genotypes()
+    rct_segments <- rct_segments()
     
-    p <- plot_gnomad(dat = genotypes, protein_length)
+    p <- plot_gnomad(dat = genotypes, protein_length, dat_segments = rct_segments)
 
     return(p)
     
@@ -510,6 +542,7 @@ app_server <- function( input, output, session ) {
     plotGnomad()
   })
 
+  
   ## scores
   plotScores1 <- reactive({
     
@@ -522,8 +555,9 @@ app_server <- function( input, output, session ) {
     dat <- tidy_data
     goi <- goi()
     toi <- toi()
+    rct_segments <- rct_segments()
     
-    plot_score(dat = tidy_data, selected_scores, score_index, protein_length, goi, toi, dbNSFP_scores)
+    plot_score(dat = tidy_data, selected_scores, score_index, protein_length, goi, toi, dbNSFP_scores, rct_segments)
     
   })
   
@@ -543,8 +577,9 @@ app_server <- function( input, output, session ) {
     dat <- tidy_data
     goi <- goi()
     toi <- toi()
+    rct_segments <- rct_segments()
     
-    plot_score(dat = tidy_data, selected_scores, score_index, protein_length, goi, toi, dbNSFP_scores)
+    plot_score(dat = tidy_data, selected_scores, score_index, protein_length, goi, toi, dbNSFP_scores, rct_segments)
     
   })
   
@@ -564,8 +599,9 @@ app_server <- function( input, output, session ) {
     dat <- tidy_data
     goi <- goi()
     toi <- toi()
+    rct_segments <- rct_segments()
     
-    plot_score(dat = tidy_data, selected_scores, score_index, protein_length, goi, toi, dbNSFP_scores)
+    plot_score(dat = tidy_data, selected_scores, score_index, protein_length, goi, toi, dbNSFP_scores, rct_segments)
     
   })
   
@@ -575,8 +611,6 @@ app_server <- function( input, output, session ) {
   
   # Violin plot
   plotViolin <- reactive({
-    
-    #req(goi())
     
     clinvar_goi <- clinvar_goi()
     transcript_info <- transcript_info()

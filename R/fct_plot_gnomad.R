@@ -6,10 +6,10 @@
 #'
 #' @noRd
 
-plot_gnomad <- function(dat, protein_length) {
+plot_gnomad <- function(dat, protein_length, dat_segments) {
   
   # Suppress 'No visible binding for global variable' message
-  aapos <- gnomAD_exomes_AC <- gnomAD_genomes_AC <- Source <- Count <- Sum <- NULL
+  aa_label <- aa_pos <- aapos <- gnomAD_exomes_AC <- gnomAD_genomes_AC <- Source <- Count <- Sum <- NULL
   
   df_gnomad <- dat %>%
     dplyr::select(aapos, gnomAD_exomes_AC, gnomAD_genomes_AC) %>%
@@ -50,6 +50,36 @@ plot_gnomad <- function(dat, protein_length) {
     scale_y_continuous(trans = reverselog_trans(10), expand = c(0,0)) +
     labs(y = "gnomAD genomes count", x = "Amino acid position") + 
     cm_layers
+  
+  # Add selected variants
+  if(nrow(dat_segments) > 0) {
+    
+    p1 <- p1 + 
+      geom_segment(data = dat_segments, aes(x = aa_pos, xend = aa_pos, y = 0, yend = 1), color = dat_segments$color) +
+      geom_text_repel(data = dat_segments, 
+                      aes(x = aa_pos, y = 1, 
+                          label = aa_label),
+                      nudge_y = log10(max(df_gnomad$Sum, na.rm=T)),
+                      direction = "x",
+                      angle = 90,
+                      segment.size = .4,
+                      size = 3,
+                      segment.linetype = "dotted",
+                      max.overlaps = Inf)  
+    
+    p2 <- p2 + 
+      geom_text_repel(data = dat_segments, 
+                      aes(x = aa_pos, y = 1,
+                          label = aa_label),
+                      nudge_y = -log10(max(df_gnomad$Sum, na.rm=T)),
+                      direction = "x",
+                      angle = 90,
+                      segment.size = .4,
+                      size = 3,
+                      segment.linetype = "dotted",
+                      max.overlaps = Inf)  
+    
+  }
   
   # Combine gnomAD exomes and genomes plots
   p <- cowplot::plot_grid(p1, p2, nrow = 2)
