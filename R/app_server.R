@@ -141,7 +141,7 @@ app_server <- function( input, output, session ) {
           "PrimateAI_score" , "DEOGEN2_score", "BayesDel_addAF_score", "BayesDel_noAF_score",     
           "fathmm.MKL_coding_score", "fathmm.XF_coding_score", "Eigen.raw_coding", "Eigen.PC.raw_coding",     
           "GenoCanyon_score", "integrated_fitCons_score", "GM12878_fitCons_score", "H1.hESC_fitCons_score",   
-          "HUVEC_fitCons_score", "LINSIGHT", "GERP.._RS", "phyloP100way_vertebrate", "phyloP30way_mammalian",     
+          "HUVEC_fitCons_score", "GERP.._RS", "phyloP100way_vertebrate", "phyloP30way_mammalian",     
           "phyloP17way_primate" , "phastCons100way_vertebrate", "phastCons30way_mammalian", "phastCons17way_primate",    
           "SiPhy_29way_logOdds", "LIST.S2_score", "gnomAD_exomes_AC", "gnomAD_exomes_AF", "gnomAD_genomes_AC", "gnomAD_genomes_AF"
   )
