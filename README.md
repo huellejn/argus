@@ -7,4 +7,5 @@ genetic variants.
 
 ## Installation
 
-Full installation is recommended using the docker container.
+Full installation is recommended using the docker container that is
+available at <https://hub.docker.com/r/hej3042/argus>.
